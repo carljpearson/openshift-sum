@@ -72,12 +72,11 @@ Now we have everything in place to start our calculations. We will calculate eac
 
 ### Satisfaction
 
-<<<<<<< HEAD
+
 To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. 
-=======
+
 To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. This is similar to the NPS is range and makes it easily digestible to those less familiar with z-scores. 
 
->>>>>>> 10e62a41caf0bb5f551ce583d8b633c1fe5d8203
 ```{r sat}
 
 #create satisfaction df -----
@@ -102,8 +101,3 @@ df %>%
 
 ```
 
-<<<<<<< HEAD
-
-=======
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
->>>>>>> 10e62a41caf0bb5f551ce583d8b633c1fe5d8203
