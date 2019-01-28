@@ -1,0 +1,92 @@
+---
+title: "OpenShift SUM Benchmarking"
+author: "carljpearson"
+date: "1/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+data_location_local <- read.csv(file="/Users/cjpearson/Documents/r_github/Openshift-sum-git/final-combined-data.csv",header=T)
+```
+
+## About
+
+Our organization wanted an empirical measure of the usability of OpenShift 3.5 and to make a benchmark comparison with OpenShift 3.11. This allowed us to give robust evidence for the effect of our design choices a critical components of the user experience. 
+
+We chose [the Single Usability Metric (SUM)](https://measuringu.com/sum-2/) method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: *add a front end container*, *add a database container*, *connect the front end and database*, and *debug a crashing pod (due to misspelled envrionment variable)*.  The metrics are created the levels of metrics at each task, each task as a whole, and finaly, each version. The output numbers are based on an NPS-like scale of -100 to 100. 
+
+The main research question is _Do our design choices between versions positively affect usability?_ 
+
+This R Markdown document will walk through the code and results of our research question for the purposes of making the calculation method accessible on free software (R Statistics).
+
+
+### Load packages and get the data in
+
+```{r data}
+#packages
+library(tidyverse) #we essentially need dplyr and ggplot2
+library(psych) #this is used to calculate a geometric mean
+library(ggthemes) #tufte plots let us maximize our data:ink ratio
+
+#data
+df <- data_location_local #use your location
+
+head(df) #what do the data look like?
+```
+
+So now we have loaded our packages we will use for calculations and plotting. The calculations are somewhat basic in the scheme of things, so we don't need any heavy lifting statistical packages. The essential columns in your long (*not* wide) dataframe must be, respective to our example: participant (factor/numeric), task (factor), time in seconds (numeric), satisfaction (numeric), completion (numeric), group/version (factor). (Note, if your time data is MM:SS instead of seconds-only then you can [use this converter I made in R Shiny](https://rh-uxd.shinyapps.io/time-converter/).)
+
+Let's move onto the items we need to specify before we calculate using our data.
+
+### Precalculation
+
+To calculate confidence intervals, we must choose a critical value. We chose a 90% confidence interval, which is imprecise in a purely academic setting, but okay for our exploratory purposes. This means our critical value is as follows:
+
+```{r z}
+zval <- 1.64 #z value at 90% confidence
+```
+
+Next, we need to choose our benchmarks. For satisfaction, there is a standard value based on research, which is _4 on a scale out of 1-5_. Completion calculations _do not use a benchmark_ (we'll talk more about this later). Time benchmarks are task specific, and you can [read about how to choose them here](https://measuringu.com/task-times/). A general rule of thumb is the 80-95th percentile fastest time to complete for those who rated satisfaction above 4/5. 
+
+```{r time_spec}
+
+df$tspec[df$task==1] <- 90 #time spec for task 1 in seconds #based on derivation from data, 80th percentile from sat above 4 could be used 
+df$tspec[df$task==2] <- 90 #time spec for task 2 in seconds
+df$tspec[df$task==3] <- 120 #time spec for task 3 in seconds
+df$tspec[df$task==4] <- 180 #time spec for task 4 in seconds
+
+```
+
+## Calculating
+
+Now we have everything in place to start our calculations. We will calculate each metric separately and then bind the dataframes. All of this can be done in vanilla R, but I find dplyr to speed up my process considerably.
+
+### Satisfaction
+
+To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. This is similar to the NPS is range and makes it easily digestible to those less familiar with z-scores. 
+
+```{r sat}
+
+#create satisfaction df -----
+df %>% 
+  group_by(group,task) %>% #group analyses broadly by product/version group and then by each task
+  summarise(mean=mean(sat),sd=sd(sat),n=n()) %>% #get means, std deviation, and total observations
+  mutate(se=(sd / sqrt(n))) %>% # of meansstd error
+  mutate(marg=se*zval) %>% #margin of error based on zval
+  mutate(lowerci=mean-marg) %>% #lower ci
+  mutate(lowerci = ifelse(lowerci <= 0, 0, lowerci)) %>% #keep lower ci above 0
+  mutate(upperci=mean+marg) %>% #upper ci
+  mutate(upperci = ifelse(upperci >= 5, 5, upperci)) %>% #keep upper ci below max
+  mutate(point_est.z = pnorm((mean - 4)/sd)) %>% #z transform based on sd
+  mutate(lowerci.z=pnorm((lowerci-4)/sd)) %>%  #z transform lower ci
+  mutate(upperci.z=pnorm((upperci-4)/sd)) %>% #z transform upper ci
+  mutate(point_est.nps=(point_est.z - .5) * 200)%>% #nps-ify
+  mutate(lowerci.nps=(lowerci.z- .5 )* 200)%>% #nps-ify
+  mutate(upperci.nps=(upperci.z- .5 )* 200)%>% #nps-ify
+  mutate(Measure="Satisfaction") %>% #name measure as var
+  mutate(spec=4) %>% #define spec var for raw plots
+  rename(point.est=mean) -> df_sat
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
