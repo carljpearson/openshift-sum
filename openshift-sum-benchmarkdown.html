@@ -130,20 +130,21 @@ $(document).ready(function () {
 
 <div id="about" class="section level2">
 <h2>About</h2>
-<p>Our organization wanted an empirical measure of the usability of OpenShift 3.5 and to make a benchmark comparison with OpenShift 3.11. This allowed us to give robust evidence for the effect of our design choices a critical components of the user experience.</p>
-<p>We chose <a href="https://measuringu.com/sum-2/">the Single Usability Metric (SUM)</a> method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: <em>add a front end container</em>, <em>add a database container</em>, <em>connect the front end and database</em>, and <em>debug a crashing pod (due to misspelled envrionment variable)</em>.</p>
+<p>Our organization wanted an empirical measure of the usability of OpenShift 3.5 and to make a benchmark comparison with OpenShift 3.11. This allowed us to give robust evidence for the effect of our design choices had on the usability of our product.</p>
+<p>We chose <a href="https://measuringu.com/sum-2/">the Single Usability Metric (SUM)</a> method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: <em>add a front end container</em>, <em>add a database container</em>, <em>connect the front end and database</em>, and <em>debug a crashing pod (due to misspelled envrionment variable)</em>. The metrics are created the levels of sub-measures on each task, each task as a whole, and finaly, each version as a whole. The output numbers are based on an NPS-like scale of -100 to 100.</p>
+<p>To get these numbers we recruited almost 40 users of OpenShift: 20 completed our tasks on version 3.5 and 13 did so on 3.11.</p>
 <p>The main research question is <em>Do our design choices between versions positively affect usability?</em></p>
 <p>This R Markdown document will walk through the code and results of our research question for the purposes of making the calculation method accessible on free software (R Statistics).</p>
 <div id="load-packages-and-get-the-data-in" class="section level3">
 <h3>Load packages and get the data in</h3>
 <pre class="r"><code>#packages
 library(tidyverse) #we essentially need dplyr and ggplot2</code></pre>
-<pre><code>## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────── tidyverse 1.2.1 ──</code></pre>
 <pre><code>## ✔ ggplot2 3.1.0     ✔ purrr   0.2.5
 ## ✔ tibble  1.4.2     ✔ dplyr   0.7.8
 ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
 ## ✔ readr   1.2.1     ✔ forcats 0.3.0</code></pre>
-<pre><code>## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <pre class="r"><code>library(psych) #this is used to calculate a geometric mean</code></pre>
@@ -170,7 +171,7 @@ head(df) #what do the data look like?</code></pre>
 </div>
 <div id="precalculation" class="section level3">
 <h3>Precalculation</h3>
-<p>To calculate confidence intervals, we must choose a critical value. We chose a 90% confidence interval, which is low in academia, but okay for our exploratory purposes. This means our critical value is as follows</p>
+<p>To calculate confidence intervals, we must choose a critical value. We chose a 90% confidence interval, which is imprecise in a purely academic setting, but okay for our exploratory purposes. This means our critical value is as follows:</p>
 <pre class="r"><code>zval &lt;- 1.64 #z value at 90% confidence</code></pre>
 <p>Next, we need to choose our benchmarks. For satisfaction, there is a standard value based on research, which is <em>4 on a scale out of 1-5</em>. Completion calculations <em>do not use a benchmark</em> (we’ll talk more about this later). Time benchmarks are task specific, and you can <a href="https://measuringu.com/task-times/">read about how to choose them here</a>. A general rule of thumb is the 80-95th percentile fastest time to complete for those who rated satisfaction above 4/5.</p>
 <pre class="r"><code>df$tspec[df$task==1] &lt;- 90 #time spec for task 1 in seconds #based on derivation from data, 80th percentile from sat above 4 could be used 
@@ -179,10 +180,33 @@ df$tspec[df$task==3] &lt;- 120 #time spec for task 3 in seconds
 df$tspec[df$task==4] &lt;- 180 #time spec for task 4 in seconds</code></pre>
 </div>
 </div>
-<div id="including-plots" class="section level2">
-<h2>Including Plots</h2>
-<p>You can also embed plots, for example:</p>
+<div id="calculating" class="section level2">
+<h2>Calculating</h2>
+<p>Now we have everything in place to start our calculations. We will calculate each metric separately and then bind the dataframes. All of this can be done in vanilla R, but I find dplyr to speed up my process considerably.</p>
+<div id="satisfaction" class="section level3">
+<h3>Satisfaction</h3>
+<p>To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. This is similar to the NPS is range and makes it easily digestible to those less familiar with z-scores.</p>
+<pre class="r"><code>#create satisfaction df -----
+df %&gt;% 
+  group_by(group,task) %&gt;% #group analyses broadly by product/version group and then by each task
+  summarise(mean=mean(sat),sd=sd(sat),n=n()) %&gt;% #get means, std deviation, and total observations
+  mutate(se=(sd / sqrt(n))) %&gt;% # of meansstd error
+  mutate(marg=se*zval) %&gt;% #margin of error based on zval
+  mutate(lowerci=mean-marg) %&gt;% #lower ci
+  mutate(lowerci = ifelse(lowerci &lt;= 0, 0, lowerci)) %&gt;% #keep lower ci above 0
+  mutate(upperci=mean+marg) %&gt;% #upper ci
+  mutate(upperci = ifelse(upperci &gt;= 5, 5, upperci)) %&gt;% #keep upper ci below max
+  mutate(point_est.z = pnorm((mean - 4)/sd)) %&gt;% #z transform based on sd
+  mutate(lowerci.z=pnorm((lowerci-4)/sd)) %&gt;%  #z transform lower ci
+  mutate(upperci.z=pnorm((upperci-4)/sd)) %&gt;% #z transform upper ci
+  mutate(point_est.nps=(point_est.z - .5) * 200)%&gt;% #nps-ify
+  mutate(lowerci.nps=(lowerci.z- .5 )* 200)%&gt;% #nps-ify
+  mutate(upperci.nps=(upperci.z- .5 )* 200)%&gt;% #nps-ify
+  mutate(Measure=&quot;Satisfaction&quot;) %&gt;% #name measure as var
+  mutate(spec=4) %&gt;% #define spec var for raw plots
+  rename(point.est=mean) -&gt; df_sat</code></pre>
 <p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+</div>
 </div>
 
 

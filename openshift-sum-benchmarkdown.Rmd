@@ -11,9 +11,12 @@ data_location_local <- read.csv(file="/Users/cjpearson/Documents/r_github/Opensh
 
 ## About
 
-Our organization wanted an empirical measure of the usability of OpenShift 3.5 and to make a benchmark comparison with OpenShift 3.11. This allowed us to give robust evidence for the effect of our design choices a critical components of the user experience. 
+Our organization wanted an empirical measure of the usability of OpenShift 3.5 and to make a benchmark comparison with OpenShift 3.11. This allowed us to give robust evidence for the effect of our design choices had on the usability of our product.
 
-We chose [the Single Usability Metric (SUM)](https://measuringu.com/sum-2/) method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: *add a front end container*, *add a database container*, *connect the front end and database*, and *debug a crashing pod (due to misspelled envrionment variable)*.  The metrics are created the levels of metrics at each task, each task as a whole, and finaly, each version. The output numbers are based on an NPS-like scale of -100 to 100. 
+We chose [the Single Usability Metric (SUM)](https://measuringu.com/sum-2/) method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: *add a front end container*, *add a database container*, *connect the front end and database*, and *debug a crashing pod (due to misspelled envrionment variable)*.  The metrics are created the levels of sub-measures on each task, each task as a whole, and finaly, each version as a whole. The output numbers are based on an NPS-like scale of -100 to 100. This is similar to the NPS in range and makes it easily digestible to those less familiar with z-scores. 
+
+
+To get these numbers we recruited almost 40 users of OpenShift: 20 completed our tasks on version 3.5 and 13 did so on 3.11.
 
 The main research question is _Do our design choices between versions positively affect usability?_ 
 
@@ -63,8 +66,7 @@ Now we have everything in place to start our calculations. We will calculate eac
 
 ### Satisfaction
 
-To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. This is similar to the NPS is range and makes it easily digestible to those less familiar with z-scores. 
-
+To broadly summarize, split by group we get the mean satisfaction of each task. We take each of those means and convert them to a z-score. This gives the standard score that we can combine. Finally, we scale the values to adhere to a -100 to 100 scale. 
 ```{r sat}
 
 #create satisfaction df -----
@@ -89,4 +91,4 @@ df %>%
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
