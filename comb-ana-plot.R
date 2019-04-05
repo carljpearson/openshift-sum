@@ -272,7 +272,7 @@ df_summarised %>%
     #axis.title.y = element_text(size = 15),
     #title = element_text(size = 18),
     ) +
-  facet_grid(.~task_named) 
+  facet_wrap(.~task_named) 
 
 ggsave(
   "plot_all_subtask_nps.png",
