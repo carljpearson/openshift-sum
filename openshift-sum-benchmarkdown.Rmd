@@ -11,7 +11,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-data_location_local <- read.csv(file="/Users/cjpearson/Documents/r_github/Openshift-sum-git/final-combined-data.csv",header=T)
+data_location_local <- read.csv(file="/Users/carlpearson/Documents/r_github/Openshift-sum-git/final-combined-data.csv",header=T)
 ```
 
 
@@ -25,7 +25,7 @@ Our organization wanted an empirical measure of the usability of OpenShift Versi
 
 We chose [the Single Usability Metric (SUM)](https://measuringu.com/sum-2/) method to standardize and summarize three classic usability metrics: completion rates, time to completion, and subjective satisfaction. Each of these metrics were collected per user across four tasks: *add a front end container*, *add a database container*, *connect the front end and database*, and *debug a crashing pod (due to misspelled envrionment variable)*.  The metrics are created the levels of metrics at each task, each task as a whole, and finaly, each version. The output numbers are based on an NPS-like scale of -100 to 100. 
 
-To get these behavioral metrics we recruited almost 33 users of OpenShift: 20 completed our tasks on version Version A and 13 did so on Version B.
+To get these behavioral metrics we recruited 33 users of OpenShift: 20 completed our tasks on version Version A and 13 did so on Version B.
 
 Our organization wanted an empirical measure of the usability of OpenShift Version A and to make a benchmark comparison with OpenShift Version A B. This allowed us to give robust evidence for the effect of our design choices a critical components of the user experience. 
 
@@ -383,3 +383,5 @@ df_SUM %>%
           x="") +
   ggthemes::theme_tufte(base_family="GillSans") #minimal theming
 ```
+
+And here we have it, the SUM score of version B is markedly higher than version A. This is good evidence of improvement between the two versions. 
